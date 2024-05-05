@@ -282,6 +282,8 @@ if __name__=='__main__':
 
     if city+district+town == '': #전국 (<- 아무것도 입력 안 한 경우)
         regions = df_all_concat #전국 지역 리스트
+    elif district+town == '':
+        regions = list(filter(lambda x: city in x, df_all_concat)) #해당하는 지역 리스트
     else:
         regions = list(filter(lambda x: city + ' ' + district + ' ' + town in x, df_all_concat)) #해당하는 지역 리스트
 
