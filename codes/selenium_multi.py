@@ -10,6 +10,7 @@ from selenium.webdriver.support import expected_conditions as EC #브라우저�
 from bs4 import BeautifulSoup #브라우저 태그를 가져오고 파싱하기 위함
 from selenium.common.exceptions import NoSuchElementException,StaleElementReferenceException,TimeoutException #예외처리를 위한 예외들
 from time import sleep
+import time
 import sys
 from multiprocessing import Pool
 
@@ -291,8 +292,13 @@ if __name__=='__main__':
 
     x_position = [i*300 % 1500 for i in range(len(keywords_list))]
 
-    pool = Pool(processes=5)
+    pool = Pool(processes=6) # 6개가 비용효율 측면에서 최적
+    
+    start = time.time()#시간 측정 시작     
     keywords_df = pool.map(scrape, zip(keywords_list, x_position))
+    end = time.time()#시간 측정 완료
+    print(f"{end - start: .5f} sec")
+
 
     print('끝났다~~~~~~~~~~~~')
     # print(keywords_df)############
