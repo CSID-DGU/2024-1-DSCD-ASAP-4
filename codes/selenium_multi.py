@@ -26,6 +26,18 @@ df_all=df_all[['지역','시도명','시군구명','읍면동명']]
 df_all = df_all.drop_duplicates()
 df_all.to_csv("./법정동.csv",encoding='cp949') #정리 후 법정동csv 저장
 """
+def extract_and_sum(review_str):
+    import re
+    numbers = re.findall(r'\d+', str(review_str))  # 문자열에서 숫자만 추출
+    numbers = map(int, numbers)  # 추출한 숫자를 정수형으로 변환
+    return sum(numbers)  # 숫자 합산
+
+def extract_rating(rating_str):
+    import re
+    number = re.findall(r'\d+\.\d+', rating_str)  # 문자열에서 소수점을 포함한 숫자 추출
+    if number:
+        return float(number[0])  # 추출한 숫자를 실수형으로 변환
+    return None  # 숫자가 없을 경우 None 반환
 
 def scrape(args): #keyword, x_position //
     keyword = args[0] #키워드
@@ -325,6 +337,14 @@ if __name__=='__main__':
     excluded_stores = store_counts[store_counts >= 5].index
     all_df['프랜차이즈여부'] = np.where(all_df['가게명'].isin(excluded_stores), 'O', 'X')
 
+    # 새로운 열 '리뷰 합계' 추가
+    all_df['리뷰 합계'] = all_df['방문자/블로그 리뷰'].apply(extract_and_sum)
+
+    #별점 뽑기
+    all_df['별점'] = all_df['별점'].apply(extract_rating)
+    
+    all_df.drop('방문자/블로그 리뷰', axis=1)
+    
     print(all_df)
     
     '''csv 저장'''
