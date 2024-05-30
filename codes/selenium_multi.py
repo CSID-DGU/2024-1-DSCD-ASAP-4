@@ -13,8 +13,9 @@ from time import sleep
 import time
 import sys
 from multiprocessing import Pool
+import re
 
-""" 주석고 같이 실행해서 법정동 csv 조금 수정했습니다. 파일은 함께 드렸으니 따로 실행하실 필요 없습니다.
+""" 주석 실행해서 법정동 csv 조금 수정했습니다. 파일은 함께 드렸으니 따로 실행하실 필요 없습니다.
 df_all=pd.read_csv('법정동_20240201.csv') ##현재 법정동csv 
 df_all.dropna(subset=['읍면동명'],inplace=True)
 df_all=df_all.reset_index().drop('index',axis=1)
@@ -26,28 +27,39 @@ df_all=df_all[['지역','시도명','시군구명','읍면동명']]
 df_all = df_all.drop_duplicates()
 df_all.to_csv("./법정동.csv",encoding='cp949') #정리 후 법정동csv 저장
 """
+
+path = 'C:/Users/jiho/Desktop/데캡/ASAP/code/' #현재 파일 경로
+total_cnt = 0
+success_cnt = 0
+
 def extract_and_sum(review_str):
-    import re
     numbers = re.findall(r'\d+', str(review_str))  # 문자열에서 숫자만 추출
     numbers = map(int, numbers)  # 추출한 숫자를 정수형으로 변환
     return sum(numbers)  # 숫자 합산
 
 def extract_rating(rating_str):
-    import re
     number = re.findall(r'\d+\.\d+', rating_str)  # 문자열에서 소수점을 포함한 숫자 추출
     if number:
         return float(number[0])  # 추출한 숫자를 실수형으로 변환
     return None  # 숫자가 없을 경우 None 반환
 
 def scrape(args): #keyword, x_position //
-    keyword = args[0] #키워드
+    #global total_cnt, success_cnt
+
+    keywords = args[0] #키워드
     x_position = args[1] #창 x 위치
+
+    f = open(f'{path}../log/log_recent.txt', 'a') #log
+    f.write(f'-----키워드 : {keywords}\n') #log
 
     ##키워드 한 번##
     store_name_lst = []
     category_lst = []
     phone_num_lst = []
+    road_address_lst = []
     address_lst = []
+    address_num_lst = []
+
     score_lst = []
     reviews_lst = []
 
@@ -69,7 +81,7 @@ def scrape(args): #keyword, x_position //
         driver.switch_to.frame(iframe)
 
     def crawl_details(driver):
-        store_name, category, phone_num, address, score, review_str = None, None, None, None, None, None #초기화
+        store_name, category, phone_num, road_address, address, address_num, score, review_str = None, None, None, None, None, None, None, None #초기화
         try:
             title = driver.find_element(By.XPATH,'//div[@class = "zD5Nm undefined"]')
             store_name = title.find_element(By.XPATH,'.//div[1]/div[1]/span[1]').text
@@ -83,15 +95,15 @@ def scrape(args): #keyword, x_position //
                 driver.implicitly_wait(0.5)
             except:
                 phone_num = '-'
-            address = driver.find_element(By.XPATH,'//span[@class = "LDgIH"]').text
 
+            road_address = driver.find_element(By.XPATH,'//span[@class = "LDgIH"]').text
+            
             try:
                 review_str = ''
                 reviews = title.find_elements(By.XPATH, './/div[@class = "dAsGb"]/span[@class = "PXMot"]')
                 for review in reviews:
                     a_review = review.find_element(By.XPATH,'./a').text
                     review_str += a_review + ' '
-
             except:
                 review_str = '-'
 
@@ -100,15 +112,28 @@ def scrape(args): #keyword, x_position //
                 score = score.replace('\n',' ') #줄바꿈 대체
             except:
                 score = '-' 
+            
 
-            print(f'가게명: {store_name},   업종: {category},   전화번호: {phone_num},   주소: {address},   별점: {score}   리뷰: {review_str}')
+            detail_address_info = driver.find_elements(By.CLASS_NAME,'vV_z_')[0]
+            detail_address_info.find_element(By.CLASS_NAME, 'PkgBl').click()#상세주소 클릭
+            
+            #지번, 주소 추출
+            if detail_address_info.find_element(By.XPATH, './/div[1]/div[2]/span[1]').text == '지번':
+                address = detail_address_info.find_element(By.XPATH, './/div[1]/div[2]').text[2:-2]
+                address_num = detail_address_info.find_element(By.XPATH, './/div[1]/div[3]').text[7:-2]
+            elif detail_address_info.find_element(By.XPATH, './/div[1]/div[2]/span[1]').text == '우':
+                address = detail_address_info.find_element(By.XPATH, './/div[1]/div[1]').text[2:-2]
+                address_num = detail_address_info.find_element(By.XPATH, './/div[1]/div[2]').text[7:-2]
 
-            return store_name, category, phone_num, address, score, review_str
+
+            #print(f'가게명: {store_name},   업종: {category},   전화번호: {phone_num},   도로명주소: {road_address},   주소: {address},   별점: {score}   리뷰: {review_str}')
+
+            return store_name, category, phone_num, road_address,address,address_num, score, review_str
 
         except Exception as e:
             print("상세 정보를 가져오는 중 에러 발생:", e)
-            #return None, None, None, None, None, None
-            return store_name, category, phone_num, address, score, review_str #오류 이후만 None
+            print('오류 발생 업체 --> ', store_name)
+            return store_name, category, phone_num, road_address,address,address_num, score, review_str #오류 이후만 None
         
 
 
@@ -117,13 +142,13 @@ def scrape(args): #keyword, x_position //
     options = webdriver.ChromeOptions()
     options.add_argument('user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/58.0.3029.110 Safari/537.3')
     options.add_argument('window-size=600,1000')
-    driver = webdriver.Chrome(ChromeDriverManager().install()) # 크롬 드라이버 설치하지 않은 경우
-    # driver = webdriver.Chrome(options=options) # 크롬 드라이버 설치한 경우
+    # driver = webdriver.Chrome(ChromeDriverManager().install()) # 크롬 드라이버 설치하지 않은 경우
+    driver = webdriver.Chrome(options=options) # 크롬 드라이버 설치한 경우
     
     driver.set_window_position(x_position,0) ##창 띄우는 위치
 
     # 대기 시간
-    driver.implicitly_wait(time_to_wait=3)
+    #driver.implicitly_wait(time_to_wait=3)
     
     # 반복 종료 조건
     loop = True
@@ -136,32 +161,27 @@ def scrape(args): #keyword, x_position //
     finally:
         pass
 
-
-
-    keyword = keyword
     #keyword = str(input('키워드를 입력하시오: '))
 
-
-
-
     search_box = driver.find_element(By.CLASS_NAME,"input_search") #검색창 찾기
-    search_box.send_keys(keyword) #검색어 입력
+    search_box.send_keys(keywords) #검색어 입력
     search_box.send_keys(Keys.ENTER) #검색
 
     
-    driver.implicitly_wait(5)
+    driver.implicitly_wait(3)
 
     switch_left()
     # 조건에 맞는 업체 없는 경우
     try:
         no_result_message = driver.find_element(By.CLASS_NAME,'FYvSc').text
         if no_result_message == '조건에 맞는 업체가 없습니다.':
-            return pd.DataFrame([['','','','','','']], columns=['가게명', '업종', '전화번호', '주소', '별점', '방문자/블로그 리뷰'])
+            return pd.DataFrame([['','','','','','','','']], columns=['가게명', '업종', '전화번호', '도로명주소','주소','우편번호', '별점', '방문자/블로그 리뷰'])
         pass
     except:
         pass
 
-
+    keyword_success_cnt = 0 #log
+    keyword_total_cnt = 0 #log
     while(loop):
         switch_left()
 
@@ -202,11 +222,13 @@ def scrape(args): #keyword, x_position //
         
         switch_left()
     
-        
+        keyword_total_cnt += len(elements) #log
         for index, e in enumerate(elements, start=1): #기존: elemets
             store_name = '' # 가게 이름
             category = '' # 카테고리
-            address = '' # 가게 주소
+            road_address = '' # 도로명 주소
+            address = ''
+            address_num = ''
             business_hours = [] # 영업 시간
             phone_num = '' # 전화번호
     
@@ -216,20 +238,26 @@ def scrape(args): #keyword, x_position //
             try:
                 #우측 그림 or 없음 - type1
                 if e.get_attribute("data-laim-exp-id")=="undefined":
-                    e.find_elements(By.XPATH, "./div[1]/div")[-1].find_element(By.XPATH,"./a[1]/div/div/span[1]").click() 
-
+                    try:
+                        #e.find_elements(By.XPATH, "./div[1]/div")[-1].find_element(By.XPATH,"./a[1]/div/div/span[1]").click()
+                        sample = e.find_elements(By.XPATH, "./div[1]/div")[-1].find_element(By.XPATH,"./a[1]")
+                        sample.send_keys('\n')
+                    except:
+                        e.find_element(By.CLASS_NAME,'CHC5F').find_element(By.XPATH, "./a/div/div/span[1]").click() 
+   
                 #아래에 그림있는 경우 - type2
                 elif e.get_attribute("data-laim-exp-id")=="undefinedundefined":
                     e.find_element(By.CLASS_NAME,'CHC5F').find_element(By.XPATH, "./a/div/div/span[1]").click() 
                     
                 #광고 - type3
                 else:  #"undefined*e"
+                    f.write('\nerror: 클릭 안 됨 1')
                     continue #다음 for문 루프로
             except:
-                pass
+                f.write('\nerror: 클릭 안 됨 2')
+                continue #가게가 클릭 안 되면 바로 다음 가게로
+
             ''''''
-            # button = driver.find_element_by_xpath(".//a/div/div/span")
-            # driver.execute_script("arguments[0].click();", button)
 
             try:
                 switch_right()
@@ -237,54 +265,77 @@ def scrape(args): #keyword, x_position //
                 print('0.5초 대기 후 우측 전환')
                 sleep(0.5)
                 switch_right()
-                break ###########################
+                
 
             #title 불러와지면 넘어감
-            WebDriverWait(driver, 2).until(
-                EC.presence_of_element_located((By.XPATH,'//div[@class = "zD5Nm undefined"]'))
-            )
-
+            try:
+                WebDriverWait(driver, 2).until(
+                    EC.presence_of_element_located((By.XPATH,'//div[@class = "zD5Nm undefined"]'))
+                )
+            except:
+                pass
             #상세정보 크롤링
-            store_name, category, phone_num, address, score, reviews = crawl_details(driver)
+            store_name, category, phone_num, road_address,address, address_num,score, reviews = crawl_details(driver)
             
             store_name_lst.append(store_name)
             category_lst.append(category)
             phone_num_lst.append(phone_num)
+            road_address_lst.append(road_address)
             address_lst.append(address)
+            address_num_lst.append(address_num)
             score_lst.append(score)
             reviews_lst.append(reviews)
 
+            f.write(f'업체명: {store_name}\n') #log
+            keyword_success_cnt += 1 #log
+            
+
         switch_left()
 
-        # 이건 페이지 넘어갈때마다 확인 -> true라면 마지막 페이지임
-        next_page = driver.find_elements(By.XPATH,'//*[@id="app-root"]/div/div[2]/div[2]/a')[-1]
+        try:
+            # 이건 페이지 넘어갈때마다 확인 -> true라면 마지막 페이지임
+            next_page = driver.find_elements(By.XPATH,'//*[@id="app-root"]/div/div[2]/div[2]/a')[-1]
 
-        # 페이지 다음 버튼이 활성화 상태일 경우 계속 진행
-        if(next_page.get_attribute('aria-disabled') == 'false'):
-            driver.find_elements(By.XPATH,'//*[@id="app-root"]/div/div[2]/div[2]/a')[-1].click()
-        # 아닐 경우 루프 정지
-        else:
-            loop = False #모두 끝
+            # 페이지 다음 버튼이 활성화 상태일 경우 계속 진행
+            if(next_page.get_attribute('aria-disabled') == 'false'):
+                driver.find_elements(By.XPATH,'//*[@id="app-root"]/div/div[2]/div[2]/a')[-1].click()
+            # 아닐 경우 루프 정지
+            else:
+                loop = False #모두 끝
+        except: #총 1페이지인 경우 인덱스 에러로 인해 except
+            loop = False
+
            
     driver.switch_to.default_content()
     driver.find_element(By.CLASS_NAME, "btn_clear").click()
     driver.implicitly_wait(5)
 
     #한 키워드가 끝난 결과를 all_df에 추가
-    keyword_df = pd.DataFrame(zip(store_name_lst, category_lst, phone_num_lst, address_lst, score_lst, reviews_lst), columns=['가게명', '업종', '전화번호', '주소', '별점', '방문자/블로그 리뷰']) #한 키워드의 모든 결과 저장
+    keyword_df = pd.DataFrame(zip(store_name_lst, category_lst, phone_num_lst, road_address_lst,address_lst,address_num_lst, score_lst, reviews_lst), columns=['가게명', '업종', '전화번호', '도로명주소','주소','우편번호', '별점', '방문자/블로그 리뷰']) #한 키워드의 모든 결과 저장
     
     driver.quit()
+
+    
+    f.write(f'-----success/total : {keyword_success_cnt}/{keyword_total_cnt}\n\n') #log
+    
+    # total_cnt += keyword_total_cnt
+    # success_cnt += keyword_success_cnt
+    
+
     return keyword_df # 키워드 한 개에 대한
 
 
 '''멀티 프로세싱'''
 if __name__=='__main__':
+    import os
+    print(os.path.abspath('.'))
 
     all_df = pd.DataFrame()  #전체 df
 
     # df_all = pd.read_csv('data/법정동.csv', encoding='cp949') #수정한 법정동 csv 불러옴
 
-    df_all_concat = pd.read_csv('data/법정동.csv', encoding='cp949')['지역']
+    df_all_concat = pd.read_csv(f'{path}../data/법정동.csv', encoding='cp949')['지역']
+
 
     '''각 항목에서 "전체" 선택 원할 시 입력 없이 enter'''
     #지역, 키워드 입력받음#
@@ -302,18 +353,29 @@ if __name__=='__main__':
 
     keywords_list = [region+keyword for region in regions]
 
-    x_position = [i*300 % 1500 for i in range(len(keywords_list))]
+    x_position = [i*280 % 1500 for i in range(len(keywords_list))]
 
-    pool = Pool(processes=6) # 6개가 비용효율 측면에서 최적
+    pool = Pool(processes=3) # 6개가 비용효율 측면에서 최적
     
     start = time.time()#시간 측정 시작     
-    keywords_df = pool.map(scrape, zip(keywords_list, x_position))
+
+
+    # if os.path.isdir('../log') == False: #log 폴더가 없는 경우 생성 
+    #     os.mkdir('../log')
+    f = open(f'{path}../log/log_recent.txt', 'w') #log
+    f.write(f'전체 키워드 : {city,district,town,keyword}\n{"="*50}\n') #log
+
+
+    keywords_df= pool.map(scrape, zip(keywords_list, x_position))
+
     end = time.time()#시간 측정 완료
-    print(f"{end - start: .5f} sec")
+    print(f"총 소요시간: {end - start: .5f} sec")
+
+    #f = open(f'{path}../log/log_recent.txt', 'a') #log
+    #f.write(f'전체 결과: {total_cnt}/{success_cnt}') #log
 
 
     print('끝났다~~~~~~~~~~~~')
-    # print(keywords_df)############
 
     for df in keywords_df: #브라우저 별로 크롤링된 결과 병합
         #print(df)
@@ -325,6 +387,7 @@ if __name__=='__main__':
     ##가게명이 None인 경우 drop
     all_df = all_df[all_df['가게명'] != ''].reset_index(drop=True)
 
+    """프랜차이즈
 
     ##프랜차이즈 여부 컬럼 생성##
     boolin =  all_df['가게명'].str.endswith('점')
@@ -335,7 +398,14 @@ if __name__=='__main__':
     #위 상호명이 5개 이상인 경우는 프랜차이즈
     store_counts = all_df1.groupby('가게명').size()
     excluded_stores = store_counts[store_counts >= 5].index
-    all_df['프랜차이즈여부'] = np.where(all_df['가게명'].isin(excluded_stores), 'O', 'X')
+    
+    #all_df.to_csv('{}../result/프랜차이즈지정이전_multi_result_{}_{}_{}_{}.csv'.format(path, city, district, town, keyword), encoding='cp949')   ############
+    
+    
+    # all_df['프랜차이즈여부'] = np.where(all_df1['가게명'].isin(excluded_stores), 'O', 'X')
+    all_df['프랜차이즈여부'] = np.where(all_df.index.isin(all_df1.index), 'O', 'X')
+
+    """  
 
     # 새로운 열 '리뷰 합계' 추가
     all_df['리뷰 합계'] = all_df['방문자/블로그 리뷰'].apply(extract_and_sum)
@@ -344,8 +414,8 @@ if __name__=='__main__':
     all_df['별점'] = all_df['별점'].apply(extract_rating)
     
     all_df.drop('방문자/블로그 리뷰', axis=1)
-    
-    print(all_df)
+      
+
     
     '''csv 저장'''
-    all_df.to_csv('./multi_result_{}_{}_{}_{}.csv'.format(city, district, town, keyword), encoding='cp949')
+    all_df.to_csv('{}../result/multi_result_{}_{}_{}_{}.csv'.format(path,city, district, town, keyword), encoding='cp949')
