@@ -10,6 +10,23 @@
 |**김부겸**| 팀원 | 통계학과 |
 |**최대한**| 팀원 | 통계학과 |
 
+## 실행 가이드
+
+1. codes 폴더 경로에 selenium_multi.py / crawling_visualmap_html.py 이 잘 위치하였는지, data 폴더에 법정동.csv 이 잘 위치하였는지 확인
+2. crawling_visualmap_html.py 실행
+```
+bokeh serve --show crawling_visualmap_html.py
+```
+3. 실행된 HTML에서 지역 및 키워드 입력
+    ex
+    - 동 단위 까지 검색 -> 동 까지 작성 + 키워드
+    - 구 단위 까지 검색 -> 구 까지 작성 (동 작성 x) + 키워드
+    - 시 단위 까지 검색 -> 시 까지 작성 + 키워드
+    - 전국 -> 키워드만 입력
+4. selenium_multi.py 실행되면서 크롤링 작동
+5. 크롤링 완료 후 result 폴더 안에 multi_result_{}.csv 생성
+6. 결과 csv를 바탕으로 HTML에 지도 시각화 결과 생성
+
 ## Commit Message 작성 가이드
 
 |타입 이름|내용|
