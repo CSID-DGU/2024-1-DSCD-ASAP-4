@@ -14,21 +14,10 @@ import time
 import sys
 from multiprocessing import Pool
 import re
+import argparse
 
-""" 주석 실행해서 법정동 csv 조금 수정했습니다. 파일은 함께 드렸으니 따로 실행하실 필요 없습니다.
-df_all=pd.read_csv('법정동_20240201.csv') ##현재 법정동csv 
-df_all.dropna(subset=['읍면동명'],inplace=True)
-df_all=df_all.reset_index().drop('index',axis=1)
-df_all.fillna('',inplace=True)
-df_all=df_all.assign(
-    지역 = lambda x:x['시도명']+' ' + x['시군구명']+' ' +x['읍면동명']+' '
-)
-df_all=df_all[['지역','시도명','시군구명','읍면동명']]
-df_all = df_all.drop_duplicates()
-df_all.to_csv("./법정동.csv",encoding='cp949') #정리 후 법정동csv 저장
-"""
 
-path = 'C:/Users/jiho/Desktop/데캡/ASAP/code/' #현재 파일 경로
+path = 'C:/Users/taejin/Desktop/2024-1-DSCD-ASAP-4/codes/' #현재 파일 경로
 total_cnt = 0
 success_cnt = 0
 
@@ -40,7 +29,7 @@ def extract_and_sum(review_str):
 def extract_rating(rating_str):
     number = re.findall(r'\d+\.\d+', rating_str)  # 문자열에서 소수점을 포함한 숫자 추출
     if number:
-        return float(number[0])  # 추출한 숫자를 실수형으로 변환
+        return "{:.2f}".format(float(number[0]))  # 추출한 숫자를 실수형으로 변환
     return None  # 숫자가 없을 경우 None 반환
 
 def scrape(args): #keyword, x_position //
@@ -118,12 +107,16 @@ def scrape(args): #keyword, x_position //
             detail_address_info.find_element(By.CLASS_NAME, 'PkgBl').click()#상세주소 클릭
             
             #지번, 주소 추출
-            if detail_address_info.find_element(By.XPATH, './/div[1]/div[2]/span[1]').text == '지번':
-                address = detail_address_info.find_element(By.XPATH, './/div[1]/div[2]').text[2:-2]
-                address_num = detail_address_info.find_element(By.XPATH, './/div[1]/div[3]').text[7:-2]
-            elif detail_address_info.find_element(By.XPATH, './/div[1]/div[2]/span[1]').text == '우':
-                address = detail_address_info.find_element(By.XPATH, './/div[1]/div[1]').text[2:-2]
-                address_num = detail_address_info.find_element(By.XPATH, './/div[1]/div[2]').text[7:-2]
+            for tag_i in range(1,4): #1,2,3
+                try:
+                    if detail_address_info.find_element(By.XPATH, f'.//div[1]/div[{tag_i}]/span[1]').text == '지번':
+                        address = detail_address_info.find_element(By.XPATH, f'.//div[1]/div[{tag_i}]').text[2:-2]
+                    elif detail_address_info.find_element(By.XPATH, f'.//div[1]/div[{tag_i}]/span[1]').text == '우':
+                        address_num = detail_address_info.find_element(By.XPATH, f'.//div[1]/div[{tag_i}]').text[7:-2]    
+                except:
+                    pass
+            
+            # print(address, '      ',address_num)
 
 
             #print(f'가게명: {store_name},   업종: {category},   전화번호: {phone_num},   도로명주소: {road_address},   주소: {address},   별점: {score}   리뷰: {review_str}')
@@ -142,8 +135,8 @@ def scrape(args): #keyword, x_position //
     options = webdriver.ChromeOptions()
     options.add_argument('user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/58.0.3029.110 Safari/537.3')
     options.add_argument('window-size=600,1000')
-    # driver = webdriver.Chrome(ChromeDriverManager().install()) # 크롬 드라이버 설치하지 않은 경우
-    driver = webdriver.Chrome(options=options) # 크롬 드라이버 설치한 경우
+    driver = webdriver.Chrome(ChromeDriverManager().install()) # 크롬 드라이버 설치하지 않은 경우
+    # driver = webdriver.Chrome(options=options) # 크롬 드라이버 설치한 경우
     
     driver.set_window_position(x_position,0) ##창 띄우는 위치
 
@@ -243,7 +236,10 @@ def scrape(args): #keyword, x_position //
                         sample = e.find_elements(By.XPATH, "./div[1]/div")[-1].find_element(By.XPATH,"./a[1]")
                         sample.send_keys('\n')
                     except:
-                        e.find_element(By.CLASS_NAME,'CHC5F').find_element(By.XPATH, "./a/div/div/span[1]").click() 
+                        try:
+                            e.find_element(By.CLASS_NAME,'CHC5F').find_element(By.XPATH, "./a/div/div/span[1]").click() 
+                        except:
+                            e.find_element(By.XPATH, "./div[2]/a[1]/div[1]/div/span[1]").click() 
    
                 #아래에 그림있는 경우 - type2
                 elif e.get_attribute("data-laim-exp-id")=="undefinedundefined":
@@ -339,10 +335,24 @@ if __name__=='__main__':
 
     '''각 항목에서 "전체" 선택 원할 시 입력 없이 enter'''
     #지역, 키워드 입력받음#
-    city = input('원하는 시도명을 입력하세요.') #'서울특별시'
-    district = input('원하는 시군구명을 입력하세요.')#'종로구'
-    town = input('원하는 읍면동명을 입력하세요.') #'효자동'
-    keyword = input('검색어를 입력하세요.') #'태권도'
+    # city = input('원하는 시도명을 입력하세요.') #'서울특별시'
+    # district = input('원하는 시군구명을 입력하세요.')#'종로구'
+    # town = input('원하는 읍면동명을 입력하세요.') #'효자동'
+    # keyword = input('검색어를 입력하세요.') #'태권도'
+    
+    parser = argparse.ArgumentParser(description='Process some inputs.')
+    parser.add_argument('--city', help='원하는 시도명을 입력하세요.', default='')
+    parser.add_argument('--district', help='원하는 시군구명을 입력하세요.', default='')
+    parser.add_argument('--town', help='원하는 읍면동명을 입력하세요.', default='')
+    parser.add_argument('--keyword', required=True, help='검색어를 입력하세요.')
+
+    args = parser.parse_args()
+
+    city = args.city
+    district = args.district
+    town = args.town
+    keyword = args.keyword
+    
 
     if city+district+town == '': #전국 (<- 아무것도 입력 안 한 경우)
         regions = df_all_concat #전국 지역 리스트
@@ -355,7 +365,7 @@ if __name__=='__main__':
 
     x_position = [i*280 % 1500 for i in range(len(keywords_list))]
 
-    pool = Pool(processes=3) # 6개가 비용효율 측면에서 최적
+    pool = Pool(processes=6) # 6개가 비용효율 측면에서 최적
     
     start = time.time()#시간 측정 시작     
 
@@ -410,12 +420,60 @@ if __name__=='__main__':
     # 새로운 열 '리뷰 합계' 추가
     all_df['리뷰 합계'] = all_df['방문자/블로그 리뷰'].apply(extract_and_sum)
 
+    all_df.to_csv('{}../result/테스트1.csv'.format(path), encoding='cp949')
+    
     #별점 뽑기
     all_df['별점'] = all_df['별점'].apply(extract_rating)
     
     all_df.drop('방문자/블로그 리뷰', axis=1)
-      
-
     
+    sido_mapping = {
+            '강원': '강원특별자치도',
+            '경기': '경기도',
+            '충남': '충청남도',
+            '충북': '충청북도',
+            '전북': '전북특별자치도',
+            '대구': '대구광역시',
+            '광주': '광주광역시',
+            '경남': '경상남도',
+            '경북': '경상북도',
+            '전남': '전라남도',
+            '제주': '제주특별자치도',
+            '세종': '세종특별자치시',
+            '대전': '대전광역시',
+            '대구': '대구광역시',
+            '인천': '인천광역시',
+            '부산': '부산광역시',
+            '울산': '울산광역시',
+            '서울': '서울특별시'
+        }
+        
+    def replace_abbreviation(address):
+        for abbr, full_name in sido_mapping.items():
+            if address.startswith(abbr):
+                return address.replace(abbr, full_name, 1)
+        return address
+    
+    # 도로명주소 열에 대해 함수 적용
+    all_df['도로명주소'] = all_df['도로명주소'].apply(replace_abbreviation)
+    
+    # 검색 범위에 포함되지 않는 주소 제거 함수
+    def filter_addresses(df, city, district, town):
+        if not city and not district and not town:
+            return df  # 전국 단위, 모든 주소 포함
+    
+        def address_in_scope(row):
+            address, town_value = str(row['도로명주소']), str(row['주소'])
+            scope_keywords = [city, district]
+            scope_keywords = [keyword for keyword in scope_keywords if keyword]
+            in_city_district = all(keyword in address for keyword in scope_keywords)
+            in_town = town in town_value if town else True
+            return in_city_district and in_town
+    
+        return df[df.apply(address_in_scope, axis=1)]
+    
+    # 검색 범위에 포함되지 않는 주소 제거
+    all_df = filter_addresses(all_df, city, district, town)
+              
     '''csv 저장'''
     all_df.to_csv('{}../result/multi_result_{}_{}_{}_{}.csv'.format(path,city, district, town, keyword), encoding='cp949')
