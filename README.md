@@ -18,7 +18,7 @@
 bokeh serve --show crawling_visualmap_html.py
 ```
 3. 실행된 HTML에서 지역 및 키워드 입력 <br/>
-    ex
+    ex)
     - 동 단위 까지 검색 -> 동 까지 작성 + 키워드
     - 구 단위 까지 검색 -> 구 까지 작성 (동 작성 x) + 키워드
     - 시 단위 까지 검색 -> 시 까지 작성 + 키워드
