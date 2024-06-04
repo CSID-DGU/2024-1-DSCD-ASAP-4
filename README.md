@@ -27,6 +27,11 @@ bokeh serve --show crawling_visualmap_html.py
 5. 크롤링 완료 후 result 폴더 안에 multi_result_{}.csv 생성
 6. 결과 csv를 바탕으로 HTML에 지도 시각화 결과 생성
 
+<br/> 전체 실행 과정
+-----------------------------
+![framework](https://github.com/CSID-DGU/2024-1-DSCD-ASAP-4/assets/112798232/2ea8f009-9981-450e-b212-6e882d725d3d)
+
+
 ## Commit Message 작성 가이드
 
 |타입 이름|내용|
