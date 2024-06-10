@@ -34,6 +34,14 @@ progress_bar = Div(text="""
 </div>
 """, width=400, height=50)
 
+# 경고문을 포함한 Div 위젯 생성
+warning_message = Div(text="""
+    <div style="color: red; font-weight: bold;">
+        넓은 지역 검색 및 키워드에 따라 1분 ~ 최대 2, 3일이 소요될 수 있습니다.<br>
+        오래 걸릴 시 중단 버튼을 눌러 다른 키워드로 검색하실 수 있습니다.
+    </div>
+""")
+
 # 데이터 정의
 df = pd.read_csv('../data/법정동.csv', encoding='cp949')
 
@@ -395,7 +403,7 @@ visual_button.on_click(visualize_data)
 
 
 # 레이아웃 구성
-layout = column(title, state_select, city_select, town_select, keyword_input, progress_bar,
+layout = column(title, state_select, city_select, town_select, keyword_input, progress_bar, warning_message,
                 row(update_button,Spacer(height=10),stop_button, visual_button), Div())
 
 # Bokeh 문서에 레이아웃 추가
