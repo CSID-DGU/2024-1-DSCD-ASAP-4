@@ -24,12 +24,15 @@ bokeh serve --show crawling_visualmap_html.py
     - 시 단위 까지 검색 -> 시 까지 작성 + 키워드
     - 전국 -> 키워드만 입력
 4. selenium_multi.py 실행되면서 크롤링 작동
+    4.1. 사용자가 크롤링 중지를 원하면 '중단' 버튼을 눌러 크롤링 중지
+    4.2. 중단 후 다른 키워드로 검색 가능
 5. 크롤링 완료 후 result 폴더 안에 multi_result_{}.csv 생성
-6. 결과 csv를 바탕으로 HTML에 지도 시각화 결과 생성
+6. 지도시각화 버튼 누를 시, 결과 csv를 바탕으로 HTML에 지도 시각화 결과 생성
+7. 시각화 된 지도 및 차트를 통해 주변 상권 분석 가능
 
 <br/> 전체 실행 과정
 -----------------------------
-![framework](https://github.com/CSID-DGU/2024-1-DSCD-ASAP-4/assets/112798232/2ea8f009-9981-450e-b212-6e882d725d3d)
+![framework2](https://github.com/CSID-DGU/2024-1-DSCD-ASAP-4/assets/112798232/e73331a1-30c1-4444-adb5-39fae4aa2610)
 
 
 ## Commit Message 작성 가이드
