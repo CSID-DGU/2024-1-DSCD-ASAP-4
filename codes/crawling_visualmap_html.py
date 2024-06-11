@@ -22,15 +22,15 @@ import atexit
 # path = 'C:/Users/taejin/Desktop/2024-1-DSCD-ASAP-4/codes' #코드 폴더 경로
 # HTML 제목
 title = Div(text=f"""
-    <div style="display: flex; align-items: center; justify-content: center;">
+    <div style="display: flex; align-items: center; justify-content: center; display: flex; align-items: center;">
         <h1 style="margin: 0;">네이버 지도 크롤링  </h1>
         <alt="Naver Map" style="width: 50px; height: 50px; margin-right: 10px;">
     </div>
     """, style={'text-align': 'center'})
 
 progress_bar = Div(text="""
-<div style="width: 100%; background-color: lightgray;">
-    <div style="width: 0%; background-color: green; color: white; text-align: center;">0%</div>
+<div style="width: 670px; max-width: 670px; background-color: lightgray; ">
+    <div style="width: 0%; background-color: green; color: white; text-align: center; ">&nbsp;0%</div>
 </div>
 """, width=400, height=50)
 
@@ -113,7 +113,7 @@ def run_crawling_script(city, district, town, keyword):
 # 진행 상황 파일을 읽고 진행률을 업데이트
 def update_progress():
     try:
-        if os.path.exists('C:/Users/taejin/Desktop/2024-1-DSCD-ASAP-4/log/progress.txt'):
+        if os.path.exists('../log/progress.txt'):
             with open('../log/progress.txt', 'r') as f:
                 progress_data = f.read().strip().split(',')
                 complete_num = int(progress_data[0])
@@ -121,7 +121,7 @@ def update_progress():
                 progress_percentage = (complete_num / total_num) * 100
 
                 progress_bar.text = f"""
-                <div style="width: 100%; background-color: lightgray;">
+                <div style="width: 670px; background-color: lightgray; max-width: 670px;">
                     <div style="width: {progress_percentage}%; background-color: green; color: white; text-align: center;">
                         {progress_percentage:.2f}% ({complete_num}/{total_num})
                     </div>
@@ -141,7 +141,7 @@ def update_data():
 
     threading.Thread(target=run_crawling_script, args=(city, district, town, keyword)).start()
     
-    curdoc().add_periodic_callback(update_progress, 1000)
+    curdoc().add_periodic_callback(update_progress, 500)
 
     
     
@@ -287,7 +287,7 @@ def visualize_data():
     image_path = '../data/navermap.jpg'
     title = Div(text=f"""
     <div style="display: flex; align-items: center; justify-content: center;">
-        <h2 style="margin: 0;">네이버 지도 시각화- {keyword} </h2>
+        <h2 style="margin: 0;">상권확인 : "{city} {district} {town} {keyword}" </h2>
     </div>
     """, style={'text-align': 'center'})
     map_regions = {}
@@ -310,6 +310,8 @@ def visualize_data():
     initial_towns = map_regions[initial_state][initial_city]
     # 새로운 지도 필터링을 위한 Select 위젯 생성
     map_state_select = Select(title="시/도", value=initial_state, options=states)
+    print('==================')
+    print(map_state_select)
     map_city_select = Select(title="시/군/구", value=initial_city, options=list(map_regions[initial_state].keys()))
     map_town_select = Select(title="읍/면/동", value=initial_towns[0], options=initial_towns)
     # 콜백 함수 정의
@@ -355,7 +357,7 @@ def visualize_data():
     # 시도명별 가게 수 Barplot 생성
     sido_store_counts = data.groupby('시도명').size().reset_index(name='가게 수')
     sido_bar_source = ColumnDataSource(sido_store_counts)
-    sido_bar_plot = figure(x_range=sido_store_counts['시도명'], plot_height=250, title=":흰색_확인_표시:시도명 별 업체 수", toolbar_location=None, tools="")
+    sido_bar_plot = figure(x_range=sido_store_counts['시도명'], plot_height=250, title="✅:시도명 별 업체 수", toolbar_location=None, tools="")
     sido_bar_plot.vbar(x='시도명', top='가게 수', width=0.1, source=sido_bar_source, color='blue')
     sido_bar_plot.xaxis.major_label_orientation = 1.2
     sido_bar_plot.xgrid.grid_line_color = None
@@ -363,7 +365,7 @@ def visualize_data():
     # 시군구명별 가게 수 Barplot 생성
     gungu_store_counts = data.groupby('시군구명').size().reset_index(name='가게 수')
     gungu_bar_source = ColumnDataSource(gungu_store_counts)
-    gungu_bar_plot = figure(x_range=gungu_store_counts['시군구명'], plot_height=250, title=":흰색_확인_표시:시군구명 별 업체 수", toolbar_location=None, tools="")
+    gungu_bar_plot = figure(x_range=gungu_store_counts['시군구명'], plot_height=250, title="✅:시군구명 별 업체 수", toolbar_location=None, tools="")
     gungu_bar_plot.vbar(x='시군구명', top='가게 수', width=0.1, source=gungu_bar_source, color='green')
     gungu_bar_plot.xaxis.major_label_orientation = 1.2
     gungu_bar_plot.xgrid.grid_line_color = None
@@ -371,7 +373,7 @@ def visualize_data():
     # 읍면동별 가게 수 Barplot 생성
     dong_store_counts = data.groupby('읍면동명').size().reset_index(name='가게 수')
     dong_bar_source = ColumnDataSource(dong_store_counts)
-    dong_bar_plot = figure(x_range=dong_store_counts['읍면동명'], plot_height=250, title=":흰색_확인_표시:읍면동명 별 업체 수", toolbar_location=None, tools="")
+    dong_bar_plot = figure(x_range=dong_store_counts['읍면동명'], plot_height=250, title="✅:읍면동명 별 업체 수", toolbar_location=None, tools="")
     dong_bar_plot.vbar(x='읍면동명', top='가게 수', width=0.6, source=dong_bar_source, color='orange')
     dong_bar_plot.xaxis.major_label_orientation = 1.2
     dong_bar_plot.xgrid.grid_line_color = None
