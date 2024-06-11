@@ -18,6 +18,7 @@ import argparse
 from tqdm import tqdm
 
 path = 'C:/Users/taejin/Desktop/2024-1-DSCD-ASAP-4/codes/' #현재 파일 경로
+# path = 'C:/Users/jiho/Desktop/데캡/ASAP_final/codes/'
 total_cnt = 0
 success_cnt = 0
 
@@ -124,8 +125,8 @@ def scrape(args): #keyword, x_position
             return store_name, category, phone_num, road_address,address,address_num, score, review_str
 
         except Exception as e:
-            print("상세 정보를 가져오는 중 에러 발생:", e)
-            print('오류 발생 업체 --> ', store_name)
+            #print("상세 정보를 가져오는 중 에러 발생:", e)
+            #print('오류 발생 업체 --> ', store_name)
             return store_name, category, phone_num, road_address,address,address_num, score, review_str #오류 이후만 None
         
 
@@ -170,7 +171,7 @@ def scrape(args): #keyword, x_position
         if no_result_message == '조건에 맞는 업체가 없습니다.':
             return pd.DataFrame([['','','','','','','','']], columns=['가게명', '업종', '전화번호', '도로명주소','주소','우편번호', '별점', '방문자/블로그 리뷰'])
         pass
-    except:
+    except NoSuchElementException:
         pass
 
     keyword_success_cnt = 0 #log
@@ -372,6 +373,9 @@ if __name__=='__main__':
         keywords_list = [region+keyword for region in regions]
         
         total_num = manager.Value('i', len(keywords_list))  # 정수형 공유 변수 초기화  #######
+
+        with open(f'{path}../log/progress.txt', 'w') as f2: #progress.txt초기화
+                f2.write(f'{complete_num.value},{total_num.value}')
         
         x_position = [i*280 % 1500 for i in range(len(keywords_list))]
 
