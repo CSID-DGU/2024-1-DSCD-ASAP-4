@@ -57,7 +57,7 @@ for 시도명, 시도_df in df.groupby('시도명'):
         regions[시도명][시군구명] = list(시군구_df['읍면동명'])
 
         # 시군구명 아래에 빈 문자열로 이루어진 리스트를 추가합니다.
-        regions[시도명][시군구명].append('')
+        regions[시도명][시군구명].insert(0, '')
 
     # 시군구명이 없는 경우에도 빈 문자열 리스트를 추가합니다.
     regions[시도명][''].append('')
@@ -300,7 +300,7 @@ def visualize_data():
             unique_towns = list(set(시군구_df['읍면동명']))
             map_regions[시도명][시군구명] = unique_towns
             # 시군구명 아래에 빈 문자열로 이루어진 리스트를 추가합니다.
-            map_regions[시도명][시군구명].append('')
+            map_regions[시도명][시군구명].insert(0, '')
         # 시군구명이 없는 경우에도 빈 문자열 리스트를 추가합니다.
         map_regions[시도명][''].append('')
     # 초기 선택값 설정
@@ -374,7 +374,7 @@ def visualize_data():
     dong_store_counts = data.groupby('읍면동명').size().reset_index(name='가게 수')
     dong_bar_source = ColumnDataSource(dong_store_counts)
     dong_bar_plot = figure(x_range=dong_store_counts['읍면동명'], plot_height=250, title="✅:읍면동명 별 업체 수", toolbar_location=None, tools="")
-    dong_bar_plot.vbar(x='읍면동명', top='가게 수', width=0.6, source=dong_bar_source, color='orange')
+    dong_bar_plot.vbar(x='읍면동명', top='가게 수', width=0.1, source=dong_bar_source, color='orange')
     dong_bar_plot.xaxis.major_label_orientation = 1.2
     dong_bar_plot.xgrid.grid_line_color = None
     dong_bar_plot.y_range.start = 0
