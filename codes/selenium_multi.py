@@ -29,7 +29,7 @@ def extract_and_sum(review_str):
     return sum(numbers)  # 숫자 합산
 
 def extract_rating(rating_str):
-    number = re.findall(r'\d+\.\d+', rating_str)  # 문자열에서 소수점을 포함한 숫자 추출
+    number = re.findall(r'\d+\.\d+', str(rating_str))  # 문자열에서 소수점을 포함한 숫자 추출
     if number:
         return "{:.2f}".format(float(number[0]))  # 추출한 숫자를 실수형으로 변환
     return None  # 숫자가 없을 경우 None 반환
@@ -431,8 +431,11 @@ if __name__=='__main__':
         all_df.to_csv('{}../result/테스트1.csv'.format(path), encoding='cp949')
         
         #별점 뽑기
-        all_df['별점'] = all_df['별점'].apply(extract_rating)
-        
+        try:
+            all_df['별점'] = all_df['별점'].apply(extract_rating)
+        except:
+            all_df['별점'] = all_df['별점'][-4:].strip()
+            
         all_df.drop('방문자/블로그 리뷰', axis=1)
         
         sido_mapping = {
@@ -457,6 +460,7 @@ if __name__=='__main__':
             }
             
         def replace_abbreviation(address):
+            address = str(address)
             for abbr, full_name in sido_mapping.items():
                 if address.startswith(abbr):
                     return address.replace(abbr, full_name, 1)
